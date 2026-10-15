@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3-Phase Energy Monitoring System</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts: Prompt -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --primary-green: #059669;
+      --primary-dark-green: #047857;
+      --light-green: #ecfdf5;
+      --accent-green: #10b981;
+      --bg-light: #f8fafc;
+      --card-border: #e2e8f0;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      background-color: var(--bg-light);
+      font-family: 'Prompt', sans-serif;
+      color: var(--text-dark);
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Header */
+    .top-header {
+      background: linear-gradient(135deg, #047857 0%, #059669 100%);
+      color: white;
+      padding: 16px 24px;
+      box-shadow: 0 4px 15px rgba(4, 120, 87, 0.15);
+    }
+
+    .top-header .badge-live {
+      background-color: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* Custom Nav Pills */
+    .nav-pills-custom .nav-link {
+      color: var(--text-muted);
+      background-color: white;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .nav-pills-custom .nav-link:hover {
+      background-color: var(--light-green);
+      color: var(--primary-dark-green);
+    }
+
+    .nav-pills-custom .nav-link.active {
+      background-color: var(--primary-green) !important;
+      color: white !important;
+      border-color: var(--primary-green) !important;
+      box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);
+    }
+
+    /* Cards Styling */
+    .card-stat {
+      background: white;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .bg-icon-green { background-color: var(--light-green); color: var(--primary-green); }
+    .bg-icon-blue { background-color: #e0f2fe; color: #0284c7; }
+    .bg-icon-amber { background-color: #fef3c7; color: #d97706; }
+
+    .val-highlight {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    /* Chart Container Wrapper */
+    .chart-container-wrapper {
+      position: relative;
+      width: 100%;
+      height: 300px;
+    }
+
+    /* Settings Cards Design & Overflow Fixes */
+    .settings-section-card {
+      background: #ffffff;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+
+    .settings-title {
+      color: var(--primary-dark-green);
+      font-weight: 600;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--light-green);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    /* Form Switch Padding & Clipping Fix */
+    .custom-switch-wrapper {
+      padding-left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .form-switch .form-check-input {
+      width: 2.8em;
+      height: 1.4em;
+      cursor: pointer;
+      margin-left: 0 !important;
+    }
+
+    .form-switch .form-check-input:checked {
+      background-color: var(--primary-green);
+      border-color: var(--primary-green);
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 0.25rem rgba(5, 150, 105, 0.15);
+    }
+
+    /* Table Custom */
+    .table-custom {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+    }
+
+    .table-custom th {
+      background-color: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+
+    /* Sub-tabs inside Settings */
+    .settings-nav .nav-link {
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 500;
+    }
+
+    .settings-nav .nav-link.active {
+      background-color: var(--light-green) !important;
+      color: var(--primary-dark-green) !important;
+      font-weight: 600;
+    }
+
+    .admin-badge {
+      background-color: #dcfce7;
+      color: #15803d;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .metric-card-sm {
+      background: #f8fafc;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <div class="top-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <div class="bg-white text-success p-2 rounded-3 shadow-sm">
+        <i class="fa-solid fa-bolt fa-lg"></i>
+      </div>
+      <div>
+        <h4 class="m-0 fw-bold">3-PHASE ENERGY MONITORING SYSTEM</h4>
+        <small class="opacity-75">ระบบตรวจวัดพลังงานไฟฟ้า 3 เฟส (PZEM-6L24 + ESP32 IoT)</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge-live"><i class="fa-solid fa-circle text-warning me-1"></i>LIVE ONLINE</span>
+      <span id="clock" class="fw-semibold"><i class="fa-regular fa-clock me-1"></i>00:00:00</span>
+    </div>
+  </div>
+
+  <div class="container-fluid py-4 px-lg-4">
+    <!-- Main Navigation Tabs -->
+    <ul class="nav nav-pills nav-pills-custom mb-4" id="mainTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="summary-tab" type="button" onclick="switchToTab('summary-view', 'summary-tab')">
+          <i class="fa-solid fa-chart-line me-2"></i>ภาพรวมระบบ (Dashboard)
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="building-energy-tab" type="button" onclick="switchToTab('building-energy-view', 'building-energy-tab')">
+          <i class="fa-solid fa-building-circle-check me-2"></i>สรุปพลังงานรายอาคาร & รายชั่วโมง
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="detail-tab" type="button" onclick="switchToTab('detail-view', 'detail-tab')">
+          <i class="fa-solid fa-layer-group me-2"></i>ข้อมูลแยกรายจุดวัด (PZEM-6L24)
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" type="button" onclick="handleSettingsTabClick()">
+          <i class="fa-solid fa-sliders me-2"></i>การตั้งค่า (Settings) <i class="fa-solid fa-lock ms-1 text-muted" style="font-size:0.8rem;"></i>
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="mainTabContent">
+
+      <!-- ========================================== -->
+      <!-- TAB 1: DASHBOARD & REALTIME OVERVIEW       -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade show active" id="summary-view" role="tabpanel">
+        <!-- Top Stats Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4">
+            <div class="card-stat p-3 d-flex align-items-center gap-3">
+              <div class="stat-icon bg-icon-green">
+                <i class="fa-solid fa-plug-circle-bolt"></i>
+              </div>
+              <div>
+                <div class="text-muted small">กำลังไฟฟ้าพีกรวมระบบ (Total Active Power)</div>
+                <div class="val-highlight" id="total-power">12.35 kW</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card-stat p-3 d-flex align-items-center gap-3">
+              <div class="stat-icon bg-icon-blue">
+                <i class="fa-solid fa-charging-station"></i>
+              </div>
+              <div>
+                <div class="text-muted small">พลังงานไฟฟ้ารวมสะสม (Total Active Energy)</div>
+                <div class="val-highlight" id="total-energy">223.60 kWh</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card-stat p-3 d-flex align-items-center gap-3">
+              <div class="stat-icon bg-icon-amber">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <div>
+                <div class="text-muted small">จำนวนจุดวัด PZEM ที่เชื่อมต่อ (Active Devices)</div>
+                <div class="val-highlight" id="active-devices">4 จุดวัด</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Realtime Power Trend & Building Share Charts -->
+        <div class="row g-3">
+          <div class="col-lg-8">
+            <div class="card-stat p-4 h-100">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold m-0 text-success"><i class="fa-solid fa-chart-area me-2"></i>กราฟกำลังไฟฟ้าจริงรวม (Power Trend - Realtime)</h6>
+                <span class="badge bg-light text-dark border">อัปเดตทุก 1 นาที</span>
+              </div>
+              <div class="chart-container-wrapper">
+                <canvas id="powerTrendChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card-stat p-4 h-100">
+              <h6 class="fw-bold mb-3 text-success"><i class="fa-solid fa-chart-pie me-2"></i>สัดส่วนการใช้พลังงานตามอาคาร</h6>
+              <div class="chart-container-wrapper d-flex align-items-center justify-content-center">
+                <canvas id="buildingShareChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: BUILDING & HOURLY ENERGY BREAKDOWN  -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade" id="building-energy-view" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold m-0 text-success"><i class="fa-solid fa-building-circle-check me-2"></i>สรุปรายงานพลังงานไฟฟ้ารายอาคารและรายชั่วโมง</h4>
+            <small class="text-muted">วิเคราะห์การใช้พลังงานย้อนหลังรายชั่วโมงประจำวัน (kWh) และข้อมูลสรุปแยกตามอาคาร/ชั้น</small>
+          </div>
+          <span class="badge bg-success-subtle text-success p-2 border border-success-subtle fs-6">
+            <i class="fa-solid fa-calendar-day me-1"></i> รายงานประจำวันวันนี้
+          </span>
+        </div>
+
+        <!-- Hourly Energy Accumulation Chart -->
+        <div class="card-stat p-4 mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold m-0 text-success"><i class="fa-solid fa-chart-column me-2"></i>การใช้พลังงานไฟฟ้ารายชั่วโมงสะสม (kWh Breakdown Today)</h6>
+            <span class="badge bg-light text-dark border">อัปเดตตามรอบบันทึกข้อมูล</span>
+          </div>
+          <div class="chart-container-wrapper">
+            <canvas id="hourlyEnergyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Dynamic Building Cards Overview -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-dark m-0"><i class="fa-solid fa-building me-2 text-success"></i>สรุปพลังงานแยกตามอาคาร/ชั้น</h5>
+          <small class="text-muted">แสดงข้อมูลตามจุดวัด PZEM-6L24 ที่ลงทะเบียนในระบบ</small>
+        </div>
+        <div class="row g-3" id="building-cards-container">
+          <!-- Dynamically Injected Cards -->
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: DETAILED PZEM MEASUREMENT DATA     -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade" id="detail-view" role="tabpanel">
+        <div class="card-stat p-4 mb-4">
+          <div class="row align-items-center g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold"><i class="fa-solid fa-filter text-success me-2"></i>เลือกจุดวัด / อาคาร-ชั้น:</label>
+              <select class="form-select form-select-lg" id="device-select" onchange="renderDeviceDetail()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <span class="badge bg-success-subtle text-success p-2 fs-6 border border-success-subtle me-2">
+                <i class="fa-solid fa-wifi me-1"></i> ESP32 Status: ONLINE
+              </span>
+              <span class="badge bg-light text-muted p-2 fs-6 border" id="detail-modbus-badge">
+                Modbus RTU Addr: 0x01
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div id="device-detail-content">
+          <!-- Dynamically Injected Device Details & Specific Chart -->
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: SETTINGS (ADMIN AUTH PROTECTED)     -->
+      <!-- ========================================== -->
+      <div class="tab-pane fade" id="settings-view" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold m-0 text-success"><i class="fa-solid fa-gear me-2"></i>การตั้งค่าระบบ (System Settings)</h4>
+            <small class="text-muted">จัดการจุดวัด PZEM-6L24, การแจ้งเตือน LINE/Telegram และรอบการส่งข้อมูล</small>
+          </div>
+          <span class="admin-badge"><i class="fa-solid fa-user-shield me-1"></i>Admin Authenticated (Admin68)</span>
+        </div>
+
+        <!-- Settings Sub-Navigation -->
+        <ul class="nav nav-pills settings-nav mb-4 bg-white p-2 rounded-3 border" id="settingsSubTab" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" id="sub-devices-tab" data-bs-toggle="pill" data-bs-target="#sub-devices">
+              <i class="fa-solid fa-server me-2"></i>1. จัดการจุดวัด PZEM-6L24
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="sub-notify-tab" data-bs-toggle="pill" data-bs-target="#sub-notify">
+              <i class="fa-solid fa-bell me-2"></i>2. ช่องทางการแจ้งเตือน (LINE / Telegram)
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="sub-msg-tab" data-bs-toggle="pill" data-bs-target="#sub-msg">
+              <i class="fa-solid fa-clock-rotate-left me-2"></i>3. เวลาและข้อความแจ้งเตือน
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" id="sub-gas-tab" data-bs-toggle="pill" data-bs-target="#sub-gas">
+              <i class="fa-solid fa-cloud-arrow-up me-2"></i>4. รอบส่งข้อมูล Google Sheets (GAS)
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="settingsSubTabContent">
+
+          <!-- 4.1 SETTINGS SUB-TAB: ADD / MANAGE PZEM DEVICES -->
+          <div class="tab-pane fade show active" id="sub-devices">
+            <div class="row g-4">
+              <div class="col-lg-5">
+                <div class="settings-section-card">
+                  <div class="settings-title">
+                    <i class="fa-solid fa-plus-circle"></i> [เพิ่มจุดวัด PZEM-6L24]
+                  </div>
+                  <form id="add-device-form" onsubmit="event.preventDefault(); handleAddNewDevice();">
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">อาคาร:</label>
+                      <input type="text" class="form-control" id="form-building" placeholder="เช่น อาคาร 1" value="อาคาร 1" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">ชั้น / พื้นที่:</label>
+                      <input type="text" class="form-control" id="form-floor" placeholder="เช่น ชั้น 4" value="ชั้น 4" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">ชื่อจุดวัด:</label>
+                      <input type="text" class="form-control" id="form-name" placeholder="เช่น ตู้ไฟชั้น 4" value="ตู้ไฟชั้น 4" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Device ID:</label>
+                      <input type="text" class="form-control" id="form-device-id" placeholder="เช่น B1-F04" value="B1-F04" required>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">ESP32 Controller ID:</label>
+                      <input type="text" class="form-control" id="form-esp-id" placeholder="เช่น ESP32-B1-F04" value="ESP32-B1-F04" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                      <div class="col-6">
+                        <label class="form-label fw-semibold">Modbus Addr:</label>
+                        <input type="number" class="form-control" id="form-modbus-addr" value="4" min="1" max="247">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label fw-semibold">กระแส CT สูงสุด:</label>
+                        <input type="text" class="form-control" value="100 A" readonly>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                      <i class="fa-solid fa-floppy-disk me-2"></i>บันทึกอุปกรณ์ลงระบบ
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="col-lg-7">
+                <div class="settings-section-card">
+                  <div class="settings-title">
+                    <i class="fa-solid fa-list-check"></i> รายการจุดวัดที่ลงทะเบียนในระบบ
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle table-custom">
+                      <thead>
+                        <tr>
+                          <th>Device ID</th>
+                          <th>อาคาร / ชั้น</th>
+                          <th>ESP32 ID</th>
+                          <th>Modbus Addr</th>
+                          <th>สถานะ</th>
+                          <th class="text-center">การทำงาน</th>
+                        </tr>
+                      </thead>
+                      <tbody id="registered-devices-tbody">
+                        <!-- Dynamic devices rows -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.2 SETTINGS SUB-TAB: NOTIFICATION CHANNELS -->
+          <div class="tab-pane fade" id="sub-notify">
+            <div class="row g-4">
+              <!-- LINE NOTIFY -->
+              <div class="col-lg-6">
+                <div class="settings-section-card h-100">
+                  <div class="settings-title">
+                    <i class="fa-brands fa-line text-success fs-4"></i> ช่องทางการเชื่อมต่อ LINE Notify
+                  </div>
+                  <div class="form-check form-switch custom-switch-wrapper mb-3 border-bottom pb-3">
+                    <label class="form-check-label fw-bold text-dark" for="lineToggle">เปิดใช้งาน LINE Notify</label>
+                    <input class="form-check-input" type="checkbox" id="lineToggle" checked>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">LINE Notify Token:</label>
+                    <div class="input-group">
+                      <span class="input-group-text bg-light"><i class="fa-solid fa-key"></i></span>
+                      <input type="text" class="form-control" value="ln_token_example_vru6823271" placeholder="วาง LINE Token ที่นี่">
+                    </div>
+                  </div>
+                  <button class="btn btn-outline-success btn-sm me-2" onclick="showToast('ส่งข้อความทดสอบ LINE เรียบร้อย!')">
+                    <i class="fa-solid fa-paper-plane me-1"></i>ทดสอบส่งข้อความ LINE
+                  </button>
+                </div>
+              </div>
+
+              <!-- TELEGRAM BOT -->
+              <div class="col-lg-6">
+                <div class="settings-section-card h-100">
+                  <div class="settings-title">
+                    <i class="fa-brands fa-telegram text-primary fs-4"></i> ช่องทางการเชื่อมต่อ Telegram Bot
+                  </div>
+                  <div class="form-check form-switch custom-switch-wrapper mb-3 border-bottom pb-3">
+                    <label class="form-check-label fw-bold text-dark" for="telegramToggle">เปิดใช้งาน Telegram Bot</label>
+                    <input class="form-check-input" type="checkbox" id="telegramToggle">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Telegram Bot Token:</label>
+                    <input type="text" class="form-control mb-2" value="bot123456789:ABC..." placeholder="Bot Token">
+                    <label class="form-label fw-semibold">Chat ID:</label>
+                    <input type="text" class="form-control" value="-100987654321" placeholder="Chat ID / Channel ID">
+                  </div>
+                  <button class="btn btn-outline-primary btn-sm me-2" onclick="showToast('ส่งข้อความทดสอบ Telegram เรียบร้อย!')">
+                    <i class="fa-solid fa-paper-plane me-1"></i>ทดสอบส่งข้อความ Telegram
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.3 SETTINGS SUB-TAB: SCHEDULES & MESSAGES -->
+          <div class="tab-pane fade" id="sub-msg">
+            <div class="settings-section-card">
+              <div class="settings-title">
+                <i class="fa-solid fa-clock"></i> การตั้งค่าข้อความและเวลาแจ้งเตือน
+              </div>
+
+              <!-- First-Time Boot -->
+              <div class="border rounded-3 p-3 mb-4 bg-light-subtle">
+                <div class="form-check form-switch custom-switch-wrapper mb-2">
+                  <label class="form-check-label fw-bold text-success" for="bootNotifyToggle">
+                    <i class="fa-solid fa-power-off me-2"></i>1. แจ้งเตือนครั้งแรก (First-Time Boot)
+                  </label>
+                  <input class="form-check-input" type="checkbox" id="bootNotifyToggle" checked>
+                </div>
+                <textarea class="form-control mt-2" rows="2">⚡ [System Boot] ระบบ Smart Energy Monitor (ESP32) เริ่มทำงานเรียบร้อยแล้ว สถานะบอร์ด: ONLINE</textarea>
+              </div>
+
+              <!-- Morning Check -->
+              <div class="border rounded-3 p-3 mb-4 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                  <div class="form-check form-switch custom-switch-wrapper m-0">
+                    <input class="form-check-input" type="checkbox" id="morningNotifyToggle" checked>
+                    <label class="form-check-label fw-bold text-success" for="morningNotifyToggle">
+                      <i class="fa-solid fa-sun me-2"></i>2. แจ้งเตือนตอนเช้า (เช็คสถานะออนไลน์)
+                    </label>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <small class="fw-semibold text-muted">เวลาที่แจ้งเตือน:</small>
+                    <input type="time" class="form-control form-control-sm" value="07:00" style="width: 110px;">
+                  </div>
+                </div>
+                <textarea class="form-control mt-2" rows="2">☀️ [Morning Status Check] ระบบตรวจวัดพลังงานไฟฟ้าทำงานปกติทุกจุด สถานะบอร์ด: ONLINE</textarea>
+              </div>
+
+              <!-- Evening Report -->
+              <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                  <div class="form-check form-switch custom-switch-wrapper m-0">
+                    <input class="form-check-input" type="checkbox" id="eveningNotifyToggle" checked>
+                    <label class="form-check-label fw-bold text-success" for="eveningNotifyToggle">
+                      <i class="fa-solid fa-moon me-2"></i>3. แจ้งเตือนตอนเย็น (สรุปรายงานประจำวัน)
+                    </label>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <small class="fw-semibold text-muted">เวลาที่แจ้งเตือน:</small>
+                    <input type="time" class="form-control form-control-sm" value="18:00" style="width: 110px;">
+                  </div>
+                </div>
+                <textarea class="form-control mt-2" rows="2">📊 [Evening Daily Report] สรุปการใช้พลังงานไฟฟ้ารวมวันนี้: 223.60 kWh | Peak Power: 13.80 kW</textarea>
+              </div>
+
+              <div class="text-end">
+                <button class="btn btn-success px-4" onclick="showToast('บันทึกการตั้งค่าข้อความเรียบร้อย!')">
+                  <i class="fa-solid fa-floppy-disk me-1"></i>บันทึกการตั้งค่าข้อความ
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4.4 SETTINGS SUB-TAB: GOOGLE SHEETS (GAS) INTERVAL SETTINGS -->
+          <div class="tab-pane fade" id="sub-gas">
+            <div class="settings-section-card">
+              <div class="settings-title">
+                <i class="fa-solid fa-table"></i> ตั้งค่ารอบส่งข้อมูลไป Google Sheets (GAS)
+              </div>
+              
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">ช่วงเวลา On-Peak (นาที/ครั้ง):</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" value="15" min="1" max="1440">
+                    <span class="input-group-text">นาที</span>
+                  </div>
+                  <small class="text-muted">แนะนำ 5-15 นาที สำหรับเก็บข้อมูลความถี่สูงช่วงทำงาน</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">ช่วงเวลา Off-Peak (นาที/ครั้ง):</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" value="30" min="1" max="1440">
+                    <span class="input-group-text">นาที</span>
+                  </div>
+                  <small class="text-muted">แนะนำ 30-60 นาที เพื่อประหยัดโควต้า Apps Script</small>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Google Apps Script Web App URL:</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light"><i class="fa-solid fa-link"></i></span>
+                  <input type="text" class="form-control text-primary font-monospace" value="https://script.google.com/macros/s/AKfycby8XyH1sp-TzUK1mTOW_gm3n6UgC4N7u-8oYcE5/exec">
+                </div>
+              </div>
+
+              <div class="text-end">
+                <button class="btn btn-success px-4" onclick="showToast('บันทึกการตั้งค่า GAS เรียบร้อย!')">
+                  <i class="fa-solid fa-floppy-disk me-1"></i>บันทึกการตั้งค่า GAS
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Admin Password Authentication Modal -->
+  <div class="modal fade" id="adminAuthModal" tabindex="-1" aria-labelledby="adminAuthModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header bg-success text-white rounded-top-4">
+          <h5 class="modal-header-title fw-bold m-0" id="adminAuthModalLabel"><i class="fa-solid fa-shield-halved me-2"></i>ยืนยันรหัสผ่านผู้ดูแลระบบ (Admin)</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 text-center">
+          <div class="mb-3">
+            <div class="bg-success-subtle text-success d-inline-flex p-3 rounded-circle mb-2">
+              <i class="fa-solid fa-lock fa-2xl"></i>
+            </div>
+            <p class="text-muted">กรุณากรอกรหัสผ่าน Admin68 เพื่อเข้าสู่หน้าการตั้งค่า</p>
+          </div>
+          <div class="mb-3">
+            <input type="password" id="adminPassInput" class="form-control form-control-lg text-center fw-bold" placeholder="• • • • • •" style="letter-spacing: 4px;" onkeyup="if(event.key==='Enter') validateAdminPass();">
+            <div id="authErrorMsg" class="text-danger small mt-2 d-none"><i class="fa-solid fa-circle-exclamation me-1"></i>รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
+          </div>
+          <button type="button" class="btn btn-success w-100 py-2 fw-bold" onclick="validateAdminPass()">ปลดล็อกเมนูตั้งค่า</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="toastAlert" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastMessage">
+          การดำเนินการสำเร็จ!
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap & Script -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Initial Reactive Device State Data
+    let devicesData = [
+      {
+        deviceId: "B1-F01",
+        building: "อาคาร 1",
+        floor: "ชั้น 1",
+        esp32Id: "ESP32-B1-F01",
+        modbusAddr: 1,
+        // Line-to-Neutral Voltages
+        v1: 231.2, v2: 231.4, v3: 230.8,
+        // Line-to-Line Voltages (Calculated: V_L12, V_L23, V_L31)
+        v12: 400.6, v23: 400.2, v31: 399.8,
+        i1: 12.3, i2: 10.1, i3: 11.2,
+        p1: 2.70, p2: 2.30, p3: 2.25, pTotal: 7.25,
+        pf1: 0.93, pf2: 0.92, pf3: 0.92, pfTotal: 0.91,
+        freq: 49.98, energy: 125.40
+      },
+      {
+        deviceId: "B1-F02",
+        building: "อาคาร 1",
+        floor: "ชั้น 2",
+        esp32Id: "ESP32-B1-F02",
+        modbusAddr: 2,
+        v1: 229.6, v2: 230.2, v3: 229.8,
+        v12: 398.1, v23: 398.4, v31: 397.9,
+        i1: 8.2, i2: 9.1, i3: 7.8,
+        p1: 1.70, p2: 1.80, p3: 1.60, pTotal: 5.10,
+        pf1: 0.91, pf2: 0.91, pf3: 0.93, pfTotal: 0.89,
+        freq: 49.97, energy: 98.20
+      },
+      {
+        deviceId: "B1-F03",
+        building: "อาคาร 1",
+        floor: "ชั้น 3",
+        esp32Id: "ESP32-B1-F03",
+        modbusAddr: 3,
+        v1: 230.1, v2: 231.0, v3: 230.5,
+        v12: 399.3, v23: 400.0, v31: 398.9,
+        i1: 5.1, i2: 4.9, i3: 5.2,
+        p1: 1.10, p2: 1.05, p3: 1.15, pTotal: 3.30,
+        pf1: 0.94, pf2: 0.93, pf3: 0.95, pfTotal: 0.94,
+        freq: 50.00, energy: 45.10
+      },
+      {
+        deviceId: "B2-F01",
+        building: "อาคาร 2",
+        floor: "ชั้น 1",
+        esp32Id: "ESP32-B2-F01",
+        modbusAddr: 1,
+        v1: 231.5, v2: 231.8, v3: 231.1,
+        v12: 401.2, v23: 400.8, v31: 400.6,
+        i1: 6.5, i2: 7.0, i3: 6.8,
+        p1: 1.40, p2: 1.50, p3: 1.45, pTotal: 4.35,
+        pf1: 0.92, pf2: 0.92, pf3: 0.91, pfTotal: 0.92,
+        freq: 49.99, energy: 67.80
+      }
+    ];
+
+    let isAdminAuthenticated = false;
+    let powerTrendChartInstance = null;
+    let buildingShareChartInstance = null;
+    let hourlyEnergyChartInstance = null;
+    let deviceDetailChartInstance = null;
+
+    // Clock Function
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerHTML = `<i class="fa-regular fa-clock me-1"></i>${now.toLocaleTimeString('th-TH')}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Helper Toast Notification
+    function showToast(msg) {
+      document.getElementById('toastMessage').innerText = msg;
+      const toastEl = document.getElementById('toastAlert');
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }
+
+    // Admin Password Protection Function (Admin68)
+    function handleSettingsTabClick() {
+      if (isAdminAuthenticated) {
+        switchToTab('settings-view', 'settings-tab');
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('adminAuthModal'));
+        document.getElementById('adminPassInput').value = '';
+        document.getElementById('authErrorMsg').classList.add('d-none');
+        modal.show();
+      }
+    }
+
+    function validateAdminPass() {
+      const inputPass = document.getElementById('adminPassInput').value;
+      if (inputPass === 'Admin68') {
+        isAdminAuthenticated = true;
+        const modalEl = document.getElementById('adminAuthModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        switchToTab('settings-view', 'settings-tab');
+        showToast('เข้าสู่ระบบ Admin68 สำเร็จ!');
+      } else {
+        document.getElementById('authErrorMsg').classList.remove('d-none');
+      }
+    }
+
+    // Clean Tab Switcher Helper (Guarantees no tab pane overlap)
+    function switchToTab(paneId, buttonId) {
+      document.querySelectorAll('.tab-pane').forEach(p => {
+        p.classList.remove('show', 'active');
+      });
+      document.querySelectorAll('.nav-pills-custom .nav-link').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      const targetPane = document.getElementById(paneId);
+      const targetBtn = document.getElementById(buttonId);
+      if (targetPane) targetPane.classList.add('show', 'active');
+      if (targetBtn) targetBtn.classList.add('active');
+
+      // Trigger chart resize on tab switch to prevent Chart.js zero-height rendering bug
+      setTimeout(() => {
+        if (powerTrendChartInstance) powerTrendChartInstance.resize();
+        if (buildingShareChartInstance) buildingShareChartInstance.resize();
+        if (hourlyEnergyChartInstance) hourlyEnergyChartInstance.resize();
+        if (deviceDetailChartInstance) deviceDetailChartInstance.resize();
+      }, 100);
+    }
+
+    // Add New Device Handler (Dynamic Real-Time Addition)
+    function handleAddNewDevice() {
+      const building = document.getElementById('form-building').value.trim();
+      const floor = document.getElementById('form-floor').value.trim();
+      const name = document.getElementById('form-name').value.trim();
+      const deviceId = document.getElementById('form-device-id').value.trim();
+      const esp32Id = document.getElementById('form-esp-id').value.trim();
+      const modbusAddr = parseInt(document.getElementById('form-modbus-addr').value) || 1;
+
+      if (!building || !floor || !deviceId || !esp32Id) {
+        showToast('กรุณากรอกข้อมูลให้ครบถ้วน!');
+        return;
+      }
+
+      // Check if deviceId already exists
+      const existing = devicesData.find(d => d.deviceId.toLowerCase() === deviceId.toLowerCase());
+      if (existing) {
+        showToast('Device ID นี้มีอยู่ในระบบแล้ว!');
+        return;
+      }
+
+      // Create dummy new device readings
+      const newDevice = {
+        deviceId: deviceId,
+        building: building,
+        floor: floor,
+        esp32Id: esp32Id,
+        modbusAddr: modbusAddr,
+        v1: 230.0, v2: 230.5, v3: 231.0,
+        v12: 399.0, v23: 400.0, v31: 399.5,
+        i1: 5.0, i2: 5.2, i3: 4.8,
+        p1: 1.15, p2: 1.20, p3: 1.10, pTotal: 3.45,
+        pf1: 0.93, pf2: 0.92, pf3: 0.94, pfTotal: 0.93,
+        freq: 50.00, energy: 10.00
+      };
+
+      devicesData.push(newDevice);
+      
+      // Update UI Components
+      renderRegisteredDevicesTable();
+      renderSummaryCards();
+      populateDeviceSelect();
+      renderDeviceDetail();
+
+      showToast(`เพิ่มจุดวัด ${deviceId} เรียบร้อยแล้ว!`);
+
+      // Reset form ID counter
+      document.getElementById('form-device-id').value = `B1-F0${devicesData.length + 1}`;
+      document.getElementById('form-esp-id').value = `ESP32-B1-F0${devicesData.length + 1}`;
+    }
+
+    // Delete Device Handler
+    function deleteDevice(index) {
+      if (confirm(`คุณต้องการลบจุดวัด ${devicesData[index].deviceId} หรือไม่?`)) {
+        const deletedId = devicesData[index].deviceId;
+        devicesData.splice(index, 1);
+        
+        renderRegisteredDevicesTable();
+        renderSummaryCards();
+        populateDeviceSelect();
+        renderDeviceDetail();
+
+        showToast(`ลบจุดวัด ${deletedId} เรียบร้อยแล้ว`);
+      }
+    }
+
+    // Render Registered Devices Table in Settings
+    function renderRegisteredDevicesTable() {
+      const tbody = document.getElementById('registered-devices-tbody');
+      tbody.innerHTML = '';
+
+      devicesData.forEach((item, idx) => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="fw-bold text-success">${item.deviceId}</td>
+            <td>${item.building} - ${item.floor}</td>
+            <td>${item.esp32Id}</td>
+            <td>0x${item.modbusAddr.toString(16).padStart(2, '0').toUpperCase()}</td>
+            <td><span class="badge bg-success">ใช้งาน</span></td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice(${idx})" title="ลบอุปกรณ์">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Render Summary Building Cards
+    function renderSummaryCards() {
+      const container = document.getElementById('building-cards-container');
+      container.innerHTML = '';
+
+      let totalP = 0;
+      let totalE = 0;
+
+      devicesData.forEach(item => {
+        totalP += item.pTotal;
+        totalE += item.energy;
+
+        container.innerHTML += `
+          <div class="col-md-6 col-lg-3">
+            <div class="card-stat p-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-success-subtle text-success border border-success-subtle">${item.deviceId}</span>
+                <small class="text-muted"><i class="fa-solid fa-wifi text-success me-1"></i>ONLINE</small>
+              </div>
+              <h6 class="fw-bold mb-1 text-dark">${item.building} - ${item.floor}</h6>
+              <div class="small text-muted mb-3">ESP32: ${item.esp32Id}</div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="small text-muted">กำลังไฟฟ้าปัจจุบัน:</span>
+                <span class="fw-bold text-danger fs-6">${item.pTotal.toFixed(2)} kW</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="small text-muted">พลังงานสะสม:</span>
+                <span class="fw-bold text-success fs-6">${item.energy.toFixed(2)} kWh</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById('total-power').innerText = `${totalP.toFixed(2)} kW`;
+      document.getElementById('total-energy').innerText = `${totalE.toFixed(2)} kWh`;
+      document.getElementById('active-devices').innerText = `${devicesData.length} จุดวัด`;
+    }
+
+    // Populate Device Select Options in Detail View
+    function populateDeviceSelect() {
+      const select = document.getElementById('device-select');
+      const currentVal = select.value;
+      select.innerHTML = '';
+
+      devicesData.forEach((d, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `${d.building} - ${d.floor} (${d.deviceId})`;
+        select.appendChild(opt);
+      });
+
+      if (currentVal && select.options[currentVal]) {
+        select.value = currentVal;
+      }
+    }
+
+    // Render Detailed View Data Table and Specific Device Chart
+    function renderDeviceDetail() {
+      const select = document.getElementById('device-select');
+      const idx = select.value || 0;
+      const d = devicesData[idx];
+      if (!d) return;
+
+      document.getElementById('detail-modbus-badge').innerText = `Modbus RTU Addr: 0x${d.modbusAddr.toString(16).padStart(2, '0').toUpperCase()}`;
+
+      const html = `
+        <div class="card-stat p-4 mb-4">
+          <!-- Top Overview Badges -->
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+              <h4 class="fw-bold text-success m-0"><i class="fa-solid fa-bolt me-2"></i>${d.building} - ${d.floor} (${d.deviceId})</h4>
+              <small class="text-muted">ESP32 Controller: ${d.esp32Id} | อัปเดตล่าสุด: ${new Date().toLocaleString('th-TH')}</small>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <div class="metric-card-sm text-center">
+                <div class="small text-muted">กำลังไฟฟ้ารวม (Active Power)</div>
+                <div class="fw-bold fs-5 text-danger">${d.pTotal.toFixed(2)} kW</div>
+              </div>
+              <div class="metric-card-sm text-center">
+                <div class="small text-muted">พลังงานสะสม (Active Energy)</div>
+                <div class="fw-bold fs-5 text-success">${d.energy.toFixed(2)} kWh</div>
+              </div>
+              <div class="metric-card-sm text-center">
+                <div class="small text-muted">Power Factor เฉลี่ย</div>
+                <div class="fw-bold fs-5 text-primary">${d.pfTotal}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Specific Device Power Trend Chart -->
+          <div class="mb-4 p-3 border rounded-3 bg-light-subtle">
+            <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>กราฟแนวโน้มกำลังไฟฟ้าจริงรายเฟส (${d.deviceId})</h6>
+            <div class="chart-container-wrapper" style="height:220px;">
+              <canvas id="deviceDetailChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Phase Readings Detailed Table with Phase-to-Phase Voltage -->
+          <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-table-cells me-2 text-success"></i>ตารางวัดค่าพารามิเตอร์ไฟฟ้า 3 เฟส (3-Phase Parameters)</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered text-center align-middle table-custom">
+              <thead>
+                <tr>
+                  <th class="text-start ps-3">พารามิเตอร์ไฟฟ้า (Parameter)</th>
+                  <th>เฟส 1 (L1)</th>
+                  <th>เฟส 2 (L2)</th>
+                  <th>เฟส 3 (L3)</th>
+                  <th>รวมระบบ (Total)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-gauge-high me-2 text-primary"></i>แรงดันไฟฟ้าเทียบสายนิวทรัล (Voltage L-N)</td>
+                  <td class="fw-bold">${d.v1.toFixed(1)} V</td>
+                  <td class="fw-bold">${d.v2.toFixed(1)} V</td>
+                  <td class="fw-bold">${d.v3.toFixed(1)} V</td>
+                  <td class="bg-light text-muted">-</td>
+                </tr>
+                <tr class="table-success-subtle">
+                  <td class="fw-semibold text-start ps-3 text-success"><i class="fa-solid fa-bolt-lightning me-2"></i>แรงดันไฟฟ้าระหว่างเฟส (Voltage L-L)</td>
+                  <td class="fw-bold text-success">${d.v12.toFixed(1)} V <small class="text-muted">(L1-L2)</small></td>
+                  <td class="fw-bold text-success">${d.v23.toFixed(1)} V <small class="text-muted">(L2-L3)</small></td>
+                  <td class="fw-bold text-success">${d.v31.toFixed(1)} V <small class="text-muted">(L3-L1)</small></td>
+                  <td class="fw-bold text-success">400.0 V <small class="text-muted">(Avg)</small></td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-wave-square me-2 text-warning"></i>กระแสไฟฟ้า (Current - A)</td>
+                  <td class="fw-bold">${d.i1.toFixed(1)} A</td>
+                  <td class="fw-bold">${d.i2.toFixed(1)} A</td>
+                  <td class="fw-bold">${d.i3.toFixed(1)} A</td>
+                  <td class="bg-light text-muted">-</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-bolt me-2 text-danger"></i>กำลังไฟฟ้าจริง (Active Power - kW)</td>
+                  <td class="fw-bold text-danger">${d.p1.toFixed(2)} kW</td>
+                  <td class="fw-bold text-danger">${d.p2.toFixed(2)} kW</td>
+                  <td class="fw-bold text-danger">${d.p3.toFixed(2)} kW</td>
+                  <td class="fw-bold text-danger fs-6 bg-danger-subtle">${d.pTotal.toFixed(2)} kW</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-chart-line me-2 text-info"></i>Power Factor (PF)</td>
+                  <td>${d.pf1}</td>
+                  <td>${d.pf2}</td>
+                  <td>${d.pf3}</td>
+                  <td class="fw-bold bg-light">${d.pfTotal}</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-arrows-spin me-2 text-secondary"></i>ความถี่ (Frequency - Hz)</td>
+                  <td colspan="3">${d.freq.toFixed(2)} Hz</td>
+                  <td class="bg-light text-muted">-</td>
+                </tr>
+                <tr>
+                  <td class="fw-semibold text-start ps-3"><i class="fa-solid fa-charging-station me-2 text-success"></i>พลังงานสะสม (Active Energy - kWh)</td>
+                  <td colspan="3" class="bg-light text-muted">-</td>
+                  <td class="fw-bold text-success fs-6 bg-success-subtle">${d.energy.toFixed(2)} kWh</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('device-detail-content').innerHTML = html;
+
+      // Render chart for specific device
+      initDeviceDetailChart(d);
+    }
+
+    // Device-specific Chart inside Detailed View
+    function initDeviceDetailChart(d) {
+      const ctx = document.getElementById('deviceDetailChart');
+      if (!ctx) return;
+
+      if (deviceDetailChartInstance) {
+        deviceDetailChartInstance.destroy();
+      }
+
+      deviceDetailChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+          datasets: [
+            {
+              label: 'กำลังไฟฟ้ารวม (kW)',
+              data: [d.pTotal * 0.7, d.pTotal * 0.85, d.pTotal * 0.95, d.pTotal, d.pTotal * 0.9, d.pTotal * 0.8, d.pTotal * 0.65],
+              borderColor: '#059669',
+              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'Phase L1 (kW)',
+              data: [d.p1 * 0.7, d.p1 * 0.85, d.p1 * 0.95, d.p1, d.p1 * 0.9, d.p1 * 0.8, d.p1 * 0.65],
+              borderColor: '#ef4444',
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Phase L2 (kW)',
+              data: [d.p2 * 0.7, d.p2 * 0.85, d.p2 * 0.95, d.p2, d.p2 * 0.9, d.p2 * 0.8, d.p2 * 0.65],
+              borderColor: '#f59e0b',
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Phase L3 (kW)',
+              data: [d.p3 * 0.7, d.p3 * 0.85, d.p3 * 0.95, d.p3, d.p3 * 0.9, d.p3 * 0.8, d.p3 * 0.65],
+              borderColor: '#3b82f6',
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' }
+          }
+        }
+      });
+    }
+
+    // Main Charts Initialization for Dashboard Tab
+    function initMainCharts() {
+      // 1. Power Trend Line Chart
+      const ctxPower = document.getElementById('powerTrendChart');
+      if (ctxPower) {
+        if (powerTrendChartInstance) powerTrendChartInstance.destroy();
+        powerTrendChartInstance = new Chart(ctxPower.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+            datasets: [
+              {
+                label: 'อาคาร 1 ชั้น 1 (kW)',
+                data: [4.2, 3.8, 6.5, 7.25, 7.1, 5.8, 4.5],
+                borderColor: '#059669',
+                backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                fill: true,
+                tension: 0.3
+              },
+              {
+                label: 'อาคาร 1 ชั้น 2 (kW)',
+                data: [2.5, 2.1, 4.2, 5.10, 4.8, 3.5, 2.8],
+                borderColor: '#0284c7',
+                backgroundColor: 'rgba(2, 132, 199, 0.05)',
+                fill: true,
+                tension: 0.3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } }
+          }
+        });
+      }
+
+      // 2. Building Share Doughnut Chart
+      const ctxShare = document.getElementById('buildingShareChart');
+      if (ctxShare) {
+        if (buildingShareChartInstance) buildingShareChartInstance.destroy();
+        buildingShareChartInstance = new Chart(ctxShare.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['อ.1 ชั้น 1', 'อ.1 ชั้น 2', 'อ.1 ชั้น 3', 'อ.2 ชั้น 1'],
+            datasets: [{
+              data: [125.4, 98.2, 45.1, 67.8],
+              backgroundColor: ['#059669', '#10b981', '#34d399', '#0284c7']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+
+      // 3. Hourly Energy Bar Chart
+      const ctxHourly = document.getElementById('hourlyEnergyChart');
+      if (ctxHourly) {
+        if (hourlyEnergyChartInstance) hourlyEnergyChartInstance.destroy();
+        hourlyEnergyChartInstance = new Chart(ctxHourly.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+            datasets: [
+              {
+                label: 'พลังงานไฟฟ้า (kWh)',
+                data: [12.4, 18.2, 24.5, 28.1, 26.3, 22.8, 15.4],
+                backgroundColor: '#10b981',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+          }
+        });
+      }
+    }
+
+    // On Load Initialization
+    window.onload = () => {
+      renderRegisteredDevicesTable();
+      renderSummaryCards();
+      populateDeviceSelect();
+      renderDeviceDetail();
+      initMainCharts();
+    };
+  </script>
+</body>
+</html>
